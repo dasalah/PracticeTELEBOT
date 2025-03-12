@@ -20,19 +20,18 @@ async def start(event):
     await client.send_message(entity=event.chat_id,message="سلام به ربات انجمن مهندسی کامپیوتر خوش آمدید",reply_to=event.message,buttons=buttons)
 
 @client.on(events.NewMessage(func=lambda e: e.text == "ثبت نام"))
-def logging(event):
+async def logging(event):
 
-    if users_status[event.chat_id] == None:
         users_status[event.chat_id] = { "step" : "SignUp" }
-        event.respond("لطفا نام خود را وارد کنید",buttons=Button.text(text="لغو", resize=True))
+        await event.respond("لطفا نام خود را وارد کنید",buttons=Button.text(text="لغو", resize=True))
 
 @client.on(events.NewMessage(func=lambda e : e.text=="لغو"))
-def cancel(event):
-    event.respond("عملبات با موفقیت لفو شد.")
-    Button.clear()
+async def cancel(event):
+    await event.respond("عملبات با موفقیت لفو شد.")
+    await Button.clear()
 
 @client.on(events.NewMessage(func= lambda e: e.is_private))
-def login(event):
+async def login(event):
 
     if   users_status[event.chat_id]["step"] == "SignUp":
           users_status[event.chat_id]["first name"] = event.text
@@ -48,7 +47,7 @@ def login(event):
 
     else:
         print("error")
-        event.respond("error")
+        await event.respond("error")
 
 
 

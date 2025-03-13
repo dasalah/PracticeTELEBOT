@@ -21,6 +21,7 @@ client = TelegramClient(session="salah",
                         api_hash=api_hash)
 
 special_words=["لفو","ثبت نام","درباره ما","/start"]
+
 @client.on(events.NewMessage(pattern="/start",func= lambda e: e.is_private))
 async def start(event):
 
@@ -37,50 +38,68 @@ async def start(event):
 @client.on(events.NewMessage(func=lambda e: e.text == "ثبت نام"))
 async def logging(event):
 
-            users_status[event.chat_id] = { "step" : step_sign }
-            await event.respond("لطفا نام خود را وارد کنید",buttons=Button.text(text="لغو", resize=True))
+    users_status[event.chat_id]=   { "step" : step_sign,
+                                    "FirstName" : "",
+                                    "LastName" : "",
+                                    "StudentCode" : "",
+                                    "PhoneNumber" : ""
+                                   }
+
+    await event.respond("لطفا نام خود را وارد کنید",buttons=Button.text(text="لغو", resize=True))
 
 
 @client.on(events.NewMessage(func=lambda e : e.text=="لغو"))
 async def cancel(event):
-    await client.send_message(entity=event.chat_id,message="عملیات با موفقیت لفو شد.",buttons=[])##bug
 
-@client.on(events.NewMessage(func= lambda e: e.is_private))
+    if users_status[event.chat_id]["step"] != 6 : #if while SignUp
+        await client.send_message(entity=event.chat_id, message="عملیات با موفقیت لفو شد.", buttons=Button.clear())
+        users_status[event.chat_id]["step"] = 0
+
+@client.on(events.NewMessage(func= lambda e: e.is_private))#SignUp
 async def login(event):
 
     if event.text in special_words:
         return
 
-    if   users_status[event.chat_id]["step"] == step_sign:
-          users_status[event.chat_id]["FirstName"] = event.text
-          users_status[event.chat_id]["step"] = step_name
-          await event.respond("لطفا نام خانوادگی خود را وارد نمایید.")
+    if event.chat_id in users_status:
 
-    elif users_status[event.chat_id]["step"] == step_name:
-          users_status[event.chat_id]["LastName"] = event.text
-          users_status[event.chat_id]["step"] = step_last
-          await event.respond("لطفا شماره دانشجویی خود را وارد کنید.")
+        if  users_status[event.chat_id]["step"] == step_sign:
+              users_status[event.chat_id]["FirstName"] = event.text
+              users_status[event.chat_id]["step"] = step_name
+              await event.respond("لطفا نام خانوادگی خود را وارد نمایید.")
 
-    elif users_status[event.chat_id]["step"] == step_last:
-          users_status[event.chat_id]["StudentCode"] = event.text
-          users_status[event.chat_id]["step"] = step_code
-          await event.respond("لطفا شماره تلفن خود را وارد کنید.")
+        elif users_status[event.chat_id]["step"] == step_name:
+              users_status[event.chat_id]["LastName"] = event.text
+              users_status[event.chat_id]["step"] = step_last
+              await event.respond("لطفا شماره دانشجویی خود را وارد کنید.")
 
+        elif users_status[event.chat_id]["step"] == step_last:
 
-    elif users_status[event.chat_id]["step"] == step_code:
-          users_status[event.chat_id] = {"PhoneNumber":event.text}
-          users_status[event.chat_id]["step"] = step_complate
-          await event.respond("ثبت نام با موفقیت انجام شد")
-          await event.respond(f"{users_status[event.chat_id].get('PhoneNumber')}")
+            if event.text.isdigit():
+                users_status[event.chat_id]["StudentCode"] = event.text
+                users_status[event.chat_id]["step"] = step_code
+                await event.respond("لطفا شماره تلفن خود را وارد کنید.")
 
-
-    else:
-        print("error")
-        await event.respond("error")
+            else :
+                await event.respond("لطفا شماره دانشجویی را درست وارد کنید")
 
 
+        elif users_status[event.chat_id]["step"] == step_code:
 
-client.start(bot_token=token)
-if client.is_connected():
-    print('Connected')
-client.run_until_disconnected()
+            if event.text.isdigit() and len(event.text) == 11:
+                  users_status[event.chat_id]["PhoneNumber"] = event.text
+                  users_status[event.chat_id]["step"] = step_complate
+                  await event.respond("ثبت نام با موفقیت انجام شد")
+                  person_information = f"نام : { users_status[event.chat_id].get("FirstName") } \n نام خانوادگی  : {users_status[event.chat_id].get("LastName")} \n شماره دانشجویی :  {users_status[event.chat_id].get("StudentCode")} \n شماره تلفن : {users_status[event.chat_id].get("PhoneNumber")} "
+                  await event.respond(f"{person_information}")
+            else :
+                await event.respond("لطفا شماره تلفن را درست وارد کنید"
+                                    "نمونه درست: 09151234567")
+
+
+if __name__ == '__main__':
+    client.start(bot_token=token)
+    if client.is_connected():
+        print('Connected')
+    client.run_until_disconnected()
+

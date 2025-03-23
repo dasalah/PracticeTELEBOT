@@ -1,9 +1,10 @@
+from telethon.tl.types.messages import Messages
+
 from main import *
 import openpyxl
-
+from telethon.tl.custom.message import Message
 
 databse = openpyxl.load_workbook("database.xlsx")
-
 cursor = databse.active
 
 
@@ -15,29 +16,30 @@ users_status={"FirstName":" ",
 
 step_sign,step_name,step_last,step_code,step_phone,step_complate=1,2,3,4,5,6
 
+first_buttons = [
+        [Button.text(text="ثبت نام", resize=True)],
+        [Button.text(text="درباره ما", resize=True)],
+        [Button.text(text="پیشنهاد",resize=True)]
+    ]
 
 ###start function
 async def start(event , client):
 
-    buttons = [
-        [Button.text(text="ثبت نام", resize=True)],
-        [Button.text(text="درباره ما")]
-    ]
-
     await client.send_message(entity=event.chat_id,message="سلام به ربات انجمن مهندسی کامپیوتر خوش آمدید",
                               reply_to=event.message,
-                              buttons=buttons)
+                              buttons=first_buttons)
 ###start function
 
 ### information bot function
 async def information_bot(event):
     await event.reply("این ربات دموی انجمن مهندسی کامپیوتر دانشگاه سیستان و بلوچستان میباشد."
                 "\n"
-                "ارتباط با ما @pichpichboy")
+                "ارتباط با ما @pichpichboy",Button=first_buttons)
 ### information bot function
 
+
 ### cancel progres
-async def cancel(event , client,users_status):
+async def cancel(event , client, users_status):
     if users_status[event.chat_id]["step"] != 6 : #if while SignUp
         await client.send_message(entity=event.chat_id,
                                   message="عملیات با موفقیت لفو شد.",
@@ -105,6 +107,8 @@ async def handle_SpecialWords(event,client,users_status):
         await cancel(event ,client ,users_status)
     elif event.text == "ثبت نام" :
         await signUp(event, users_status)
+    elif event.text == "پیشنهاد" :
+        await call_to_us(event,users_status)
     elif event.text == "تایید میکنم" :
         if event.chat_id in users_status and users_status[event.chat_id]["step"] == step_complate:
             await confirm_information(event,users_status)
@@ -115,7 +119,6 @@ async def confirm_information(event,users_status):
     if users_status[event.chat_id]["step"] == step_complate:
         await event.respond("اطلاعات شما با موفقیت ذخیره شد.",buttons=Button.clear())
         data = [
-
                 users_status[event.chat_id].get("FirstName"),
                 users_status[event.chat_id].get("LastName"),
                 users_status[event.chat_id].get("StudentCode"),
@@ -125,9 +128,9 @@ async def confirm_information(event,users_status):
         cursor.append(data)
         databse.save("database.xlsx")
 
-
     else:
         await event.respond("لطفا ثبت نام خود کامل به پایان برسانید.")
+
 ## function for signup
 async def signUp(event,users_status):
     users_status[event.chat_id] = {"step": step_sign,
@@ -139,4 +142,27 @@ async def signUp(event,users_status):
     ## declare insertName here,because some problem
     await event.respond("لطفا نام خود را وارد کنید", buttons=Button.text(text="لغو", resize=True))
 
+
+async def call_to_us(event : Messages,users_status):
+    intro_message = "با سلام,لطفا اگه پیشنهاد یا انتقادی نسبت به ما دارین یا حرفیو میخواین باهامون در ارتباط بزارین اینجا بنویسین."
+    await event.respond(message=intro_message,buttons=Button.clear())
+    users_status[event.chat_id] = {"step": "message",
+                                   "FirstName": "",
+                                   "LastName": "",
+                                   "StudentCode": "",
+                                   "PhoneNumber": ""
+                                   }
+
+
+async def save_comment_to_excel(event : Messages,users_status):
+    save_comment = openpyxl.load_workbook("comment.xlsx")
+    saver_comment = save_comment.active
+    data = [
+        event.chat_id,
+        event.text
+    ]
+    saver_comment.append(data)
+    save_comment.save("comment.xlsx")
+    users_status[event.chat_id]["step"] = 0
+    await event.respond("بازخورد شما با موفقیت ثبت شد.",buttons=first_buttons)
 

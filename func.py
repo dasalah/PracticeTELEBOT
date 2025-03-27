@@ -1,9 +1,11 @@
-from telethon.tl.types.messages import Messages
 
+from telethon.tl.custom.message import Message
 from main import *
 import openpyxl
-from telethon.tl.custom.message import Message
+from telethon.tl.types import PeerUser, PeerChat, PeerChannel
+admin = 6033723482
 
+##signup database in excel
 databse = openpyxl.load_workbook("database.xlsx")
 cursor = databse.active
 
@@ -30,11 +32,12 @@ async def start(event , client):
                               buttons=first_buttons)
 ###start function
 
+
 ### information bot function
 async def information_bot(event):
     await event.reply("این ربات دموی انجمن مهندسی کامپیوتر دانشگاه سیستان و بلوچستان میباشد."
                 "\n"
-                "ارتباط با ما @pichpichboy",Button=first_buttons)
+                "ارتباط با ما @pichpichboy",buttons=first_buttons)
 ### information bot function
 
 
@@ -129,7 +132,7 @@ async def confirm_information(event,users_status):
         databse.save("database.xlsx")
 
     else:
-        await event.respond("لطفا ثبت نام خود کامل به پایان برسانید.")
+        await event.respond("لطفا ثبت نام خود را کامل به پایان برسانید.")
 
 ## function for signup
 async def signUp(event,users_status):
@@ -143,9 +146,11 @@ async def signUp(event,users_status):
     await event.respond("لطفا نام خود را وارد کنید", buttons=Button.text(text="لغو", resize=True))
 
 
-async def call_to_us(event : Messages,users_status):
+async def call_to_us(event : Message,users_status):
     intro_message = "با سلام,لطفا اگه پیشنهاد یا انتقادی نسبت به ما دارین یا حرفیو میخواین باهامون در ارتباط بزارین اینجا بنویسین."
-    await event.respond(message=intro_message,buttons=Button.clear())
+    await event.respond(message=intro_message,buttons=Button.clear(),reply_to=event.message)
+
+
     users_status[event.chat_id] = {"step": "message",
                                    "FirstName": "",
                                    "LastName": "",
@@ -154,9 +159,10 @@ async def call_to_us(event : Messages,users_status):
                                    }
 
 
-async def save_comment_to_excel(event : Messages,users_status):
+async def save_comment_to_excel(event : Message,users_status,client):
     save_comment = openpyxl.load_workbook("comment.xlsx")
     saver_comment = save_comment.active
+    await client.forward_messages(entity=admin,messages=event.message)
     data = [
         event.chat_id,
         event.text
@@ -166,3 +172,16 @@ async def save_comment_to_excel(event : Messages,users_status):
     users_status[event.chat_id]["step"] = 0
     await event.respond("بازخورد شما با موفقیت ثبت شد.",buttons=first_buttons)
 
+async def is_join(event,client,idchannel):
+    ## if user joined in the  chaneel
+    joined = await client.get_entity(PeerChannel(idchannel))
+    participants_channel = await client.get_participants(entity=joined)
+    for user in participants_channel:
+        if user.id == event.chat_id:
+            return True
+    return False
+
+async def join_Request(event):
+    join_Message = "لطفا در چنل مهندسی کامپیوتر دانشگاه سیستان و بلوچستان عضو شوید سپس کلمه /start را ارسال نمایید."
+    await event.respond(join_Message,
+                        buttons=[Button.url("انجمن مهندسی کامپیوتر", url="t.me/ceusb")])

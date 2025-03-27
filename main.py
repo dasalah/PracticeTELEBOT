@@ -1,8 +1,6 @@
 from telethon import TelegramClient, events,Button
 from config import api_id, api_hash, token
 from func import *
-from telethon.tl.custom.message import Message
-
 
 users_status={"FirstName":" ",
               "LastName":" ",
@@ -14,13 +12,22 @@ users_status={"FirstName":" ",
 client = TelegramClient(session="salah",
                         api_id=api_id,
                         api_hash=api_hash,
-                        proxy=("HTTP","127.0.0.1",8086))
+                        proxy=("HTTP","127.0.0.1",8087))
 
 #special words for not declare for it
 special_words=["لغو","ثبت نام","درباره ما","تایید میکنم","پیشنهاد"]
 
+#replace your id channel for Forced joining in the channel
+idchannel = 1111
+
+
 @client.on(events.NewMessage(pattern=r'^/start',func= lambda e: e.is_private))
 async def star(event : Message):
+    #replace id channel
+    if not await is_join(event,client,idchannel):
+        await join_Request(event)
+        return
+
     if len(event.text.split(" ")) == 2 :
         splited_text=event.text.split(" ")
         print(splited_text[1])
@@ -40,6 +47,9 @@ async def star(event : Message):
 #SignUp
 @client.on(events.NewMessage(func= lambda e: e.is_private))
 async def action(event):
+    if not await is_join(event,client,idchannel):
+        await join_Request(event)
+        return
     # if word in special words
     if event.text in special_words:
         return
@@ -50,12 +60,15 @@ async def action(event):
     #for signUp#
 
     if event.chat_id in users_status and users_status[event.chat_id]["step"] == "message":
-        await save_comment_to_excel(event,users_status)
+        await save_comment_to_excel(event,users_status,client)
 
 
 # if text in special words
 @client.on(events.NewMessage(func = lambda e : e.text in special_words))
 async def action(event):
+    if not await is_join(event,client,idchannel):
+        await join_Request(event)
+        return
     await handle_SpecialWords(event,client,users_status)
 
 
@@ -63,8 +76,8 @@ if __name__ == '__main__':
     client.start(bot_token=token)
     if client.is_connected():
         print('bot Connected')
-    client.run_until_disconnected()
 
+    client.run_until_disconnected()
 
 
 

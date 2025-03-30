@@ -1,13 +1,24 @@
-
 from telethon.tl.custom.message import Message
 from main import *
 import openpyxl
-from telethon.tl.types import PeerUser, PeerChat, PeerChannel
+from telethon.tl.types import PeerChannel
+from userDB import Base, User, Event, db_init
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+
 admin = 6033723482
 
 ##signup database in excel
-databse = openpyxl.load_workbook("database.xlsx")
-cursor = databse.active
+excelDatabace = openpyxl.load_workbook("database.xlsx")
+excelCursor = excelDatabace.active
+
+#sql database
+engine = create_engine('sqlite:///bot.db')
+Base.metadata.bind = engine
+Session = sessionmaker(bind=engine)
+db_init()
+#sql database
 
 
 users_status={"FirstName":" ",
@@ -40,7 +51,6 @@ async def information_bot(event):
                 "ارتباط با ما @pichpichboy",buttons=first_buttons)
 ### information bot function
 
-
 ### cancel progres
 async def cancel(event , client, users_status):
     if users_status[event.chat_id]["step"] != 6 : #if while SignUp
@@ -48,7 +58,6 @@ async def cancel(event , client, users_status):
                                   message="عملیات با موفقیت لفو شد.",
                                   buttons=Button.clear())
         users_status[event.chat_id]["step"] = 0
-
 
 
 ## def save information for save information
@@ -128,8 +137,25 @@ async def confirm_information(event,users_status):
                 users_status[event.chat_id].get("PhoneNumber")
         ]
         print(data)
-        cursor.append(data)
-        databse.save("database.xlsx")
+        excelCursor.append(data)
+        excelDatabace.save("database.xlsx")
+
+        #create user object
+        new_user = User(
+            telegram_id=event.chat_id,
+            first_name=users_status[event.chat_id].get("FirstName"),
+            last_name=users_status[event.chat_id].get("LastName"),
+            student_code=users_status[event.chat_id].get("StudentCode"),
+            phone_number=users_status[event.chat_id].get("PhoneNumber")
+        )
+        #create user object
+
+        #save user data in database
+        session = Session()
+        session.add(new_user)
+        session.commit()
+        session.close()
+        #save user data in database
 
     else:
         await event.respond("لطفا ثبت نام خود را کامل به پایان برسانید.")
@@ -160,17 +186,17 @@ async def call_to_us(event : Message,users_status):
 
 
 async def save_comment_to_excel(event : Message,users_status,client):
-    save_comment = openpyxl.load_workbook("comment.xlsx")
-    saver_comment = save_comment.active
-    await client.forward_messages(entity=admin,messages=event.message)
-    data = [
-        event.chat_id,
-        event.text
-    ]
-    saver_comment.append(data)
-    save_comment.save("comment.xlsx")
-    users_status[event.chat_id]["step"] = 0
-    await event.respond("بازخورد شما با موفقیت ثبت شد.",buttons=first_buttons)
+        save_comment = openpyxl.load_workbook("comment.xlsx")
+        saver_comment = save_comment.active
+        await client.forward_messages(entity=admin,messages=event.message)
+        data = [
+            event.chat_id,
+            event.text
+        ]
+        saver_comment.append(data)
+        save_comment.save("comment.xlsx")
+        users_status[event.chat_id]["step"] = 0
+        await event.respond("بازخورد شما با موفقیت ثبت شد.",buttons=first_buttons)
 
 async def is_join(event,client,idchannel):
     ## if user joined in the  chaneel
@@ -185,3 +211,5 @@ async def join_Request(event):
     join_Message = "لطفا در چنل مهندسی کامپیوتر دانشگاه سیستان و بلوچستان عضو شوید سپس کلمه /start را ارسال نمایید."
     await event.respond(join_Message,
                         buttons=[Button.url("انجمن مهندسی کامپیوتر", url="t.me/ceusb")])
+
+

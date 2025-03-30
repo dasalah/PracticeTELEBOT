@@ -2,6 +2,7 @@ from telethon import TelegramClient, events,Button
 from config import api_id, api_hash, token
 from func import *
 
+
 users_status={"FirstName":" ",
               "LastName":" ",
               "step":0,
@@ -12,13 +13,13 @@ users_status={"FirstName":" ",
 client = TelegramClient(session="salah",
                         api_id=api_id,
                         api_hash=api_hash,
-                        proxy=("HTTP","127.0.0.1",8087))
-
+                        )
+#proxy=("HTTP","127.0.0.1",8087)
 #special words for not declare for it
 special_words=["لغو","ثبت نام","درباره ما","تایید میکنم","پیشنهاد"]
 
 #replace your id channel for Forced joining in the channel
-idchannel = 1111
+idchannel = #replace
 
 
 @client.on(events.NewMessage(pattern=r'^/start',func= lambda e: e.is_private))

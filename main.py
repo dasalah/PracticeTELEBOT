@@ -1,4 +1,4 @@
-from telethon import TelegramClient, events,Button
+from telethon import TelegramClient, events, Button
 from config import api_id, api_hash, token
 from func import *
 
@@ -19,14 +19,16 @@ client = TelegramClient(session="salah",
 special_words=["لغو","ثبت نام","درباره ما","تایید میکنم","پیشنهاد"]
 
 #replace your id channel for Forced joining in the channel
-idchannel = #replace
+idchannel = None  # Will use database settings instead
+
+# Admin commands list
+admin_commands = ['/set_force_channel', '/toggle_force_join', '/force_join_stats']
 
 
 @client.on(events.NewMessage(pattern=r'^/start',func= lambda e: e.is_private))
 async def star(event : Message):
-    #replace id channel
-    if not await is_join(event,client,idchannel):
-        await join_Request(event)
+    # Use new force join system
+    if not await check_force_join(event, client):
         return
 
     if len(event.text.split(" ")) == 2 :
@@ -48,9 +50,15 @@ async def star(event : Message):
 #SignUp
 @client.on(events.NewMessage(func= lambda e: e.is_private))
 async def action(event):
-    if not await is_join(event,client,idchannel):
-        await join_Request(event)
+    # Check for admin commands first
+    if any(event.text.startswith(cmd) for cmd in admin_commands):
+        await handle_admin_commands(event, client)
         return
+        
+    # Use new force join system
+    if not await check_force_join(event, client):
+        return
+        
     # if word in special words
     if event.text in special_words:
         return
@@ -67,10 +75,22 @@ async def action(event):
 # if text in special words
 @client.on(events.NewMessage(func = lambda e : e.text in special_words))
 async def action(event):
-    if not await is_join(event,client,idchannel):
-        await join_Request(event)
+    # Use new force join system
+    if not await check_force_join(event, client):
         return
     await handle_SpecialWords(event,client,users_status)
+
+# Handle callback queries (inline button presses)
+@client.on(events.CallbackQuery)
+async def callback_query_handler(event):
+    if event.data == b"check_membership":
+        # Re-check membership when user clicks "Check Membership Again"
+        if await check_force_join(event, client):
+            await event.edit("✅ عضویت شما تأیید شد! حالا می‌تونید از ربات استفاده کنید.")
+            # Show main menu
+            await start(event, client)
+        else:
+            await event.answer("❌ هنوز عضو چنل نشده‌اید. لطفاً ابتدا عضو شوید.", alert=True)
 
 
 if __name__ == '__main__':

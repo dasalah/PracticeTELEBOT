@@ -50,6 +50,18 @@ class Event(Base):
     participants = relationship("User", secondary=event_participants, back_populates="registered_event")
 
 
+class Settings(Base):
+    """Settings table for storing bot configuration"""
+    
+    __tablename__ = 'settings'
+    
+    id = Column(Integer, primary_key=True)
+    key = Column(String(100), unique=True, nullable=False)
+    value = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+
 
 def db_init():
     engine = create_engine('sqlite:///bot.db')

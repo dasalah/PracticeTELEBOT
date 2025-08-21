@@ -1,6 +1,5 @@
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
-from openpyxl.utils.dataframe import dataframe_to_rows
 import os
 from datetime import datetime
 
